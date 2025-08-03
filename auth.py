@@ -14,7 +14,7 @@ logger = logging.getLogger("Auth")
 TENANT_ID = "74c129d6-75e9-47bc-89e7-fc64baa89a47"
 # This is the Application ID URI of your Backend API App Registration
 CLIENT_ID = "3bd13b6a-2f23-4ace-9d71-d6d6a8e77a4e"
-ISSUER = f"https://sts.windows.net/{TENANT_ID}/"
+ISSUER = f"https://login.microsoftonline.com/{TENANT_ID}/v2.0"
 OPENID_CONFIG_URL = f"https://login.microsoftonline.com/{TENANT_ID}/v2.0/.well-known/openid-configuration"
 ALGORITHMS = ["RS256"]
 
