@@ -33,6 +33,7 @@ app.add_middleware(
 # The 'dependencies' parameter ensures verify_token is run for every GraphQL request.
 graphql_app = GraphQLRouter(
     schema,
+    graphiql=False,
     context_getter=get_context,
     # **CRITICAL CHANGE**: This enforces authentication on the entire GraphQL endpoint.
     dependencies=[Depends(verify_token)] 
