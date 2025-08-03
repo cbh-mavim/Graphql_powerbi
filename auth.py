@@ -108,3 +108,6 @@ async def verify_token(request: Request) -> User:
     except Exception as e:
         logger.error("[Auth][ERROR] An unexpected error occurred during token verification: %s", e)
         raise HTTPException(status_code=500, detail="An error occurred during token verification.")
+    
+
+    #this
