@@ -11,7 +11,7 @@ logger = logging.getLogger("Auth")
 
 # Azure AD and app-specific configuration
 TENANT_ID = "74c129d6-75e9-47bc-89e7-fc64baa89a47"
-CLIENT_ID = "api://d9f4027b-8e17-4831-9f24-13edd254c47d"
+CLIENT_ID = "api://3bd13b6a-2f23-4ace-9d71-d6d6a8e77a4e"
 ISSUER = f"https://sts.windows.net/{TENANT_ID}/"
 OPENID_CONFIG_URL = f"https://login.microsoftonline.com/{TENANT_ID}/v2.0/.well-known/openid-configuration"
 ALGORITHMS = ["RS256"]
