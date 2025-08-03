@@ -9,12 +9,20 @@ from time import time
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("Auth")
 
-# Azure AD and app-specific configuration
+# --- CONFIGURATION ---
+# These values are taken from your original code.
 TENANT_ID = "74c129d6-75e9-47bc-89e7-fc64baa89a47"
-CLIENT_ID = "api://3bd13b6a-2f23-4ace-9d71-d6d6a8e77a4e"
+# This is the Application ID URI of your Backend API App Registration
+CLIENT_ID = "api://3bd13b6a-2f23-4ace-9d71-d6d6a8e77a4e" 
 ISSUER = f"https://sts.windows.net/{TENANT_ID}/"
 OPENID_CONFIG_URL = f"https://login.microsoftonline.com/{TENANT_ID}/v2.0/.well-known/openid-configuration"
 ALGORITHMS = ["RS256"]
+
+# --- POWER BI AUTH HEADER ---
+# This is the special header Power BI needs to see in a 401 response.
+AUTH_CHALLENGE_HEADER = {
+    "WWW-Authenticate": f'Bearer authorization_uri="https://login.microsoftonline.com/{TENANT_ID}", resource_id="{CLIENT_ID}"'
+}
 
 # User class
 class User:
@@ -65,15 +73,18 @@ async def get_jwks():
 async def verify_token(request: Request) -> User:
     auth_header = request.headers.get("Authorization")
     if not auth_header:
-        logger.warning("[Auth][WARN] Missing Authorization header.")
-        raise HTTPException(status_code=401, detail="Authorization header is missing")
+        logger.warning("[Auth][WARN] Missing Authorization header. Sending 401 challenge.")
+        # **MODIFIED**: Added the special header for Power BI
+        raise HTTPException(status_code=401, detail="Authorization header is missing", headers=AUTH_CHALLENGE_HEADER)
 
     try:
         scheme, token = auth_header.split()
         if scheme.lower() != "bearer":
-            raise HTTPException(status_code=401, detail="Invalid authentication scheme. Must be 'Bearer'.")
+            # **MODIFIED**: Added the special header for Power BI
+            raise HTTPException(status_code=401, detail="Invalid authentication scheme. Must be 'Bearer'.", headers=AUTH_CHALLENGE_HEADER)
     except ValueError:
-        raise HTTPException(status_code=401, detail="Invalid Authorization header format.")
+        # **MODIFIED**: Added the special header for Power BI
+        raise HTTPException(status_code=401, detail="Invalid Authorization header format.", headers=AUTH_CHALLENGE_HEADER)
 
     try:
         jwks = await get_jwks()
@@ -82,7 +93,8 @@ async def verify_token(request: Request) -> User:
 
         if not rsa_key:
             logger.error("[Auth][ERROR] No matching key ID (kid) found in JWKS.")
-            raise HTTPException(status_code=401, detail="Unable to find a matching key to verify the token.")
+            # **MODIFIED**: Added the special header for Power BI
+            raise HTTPException(status_code=401, detail="Unable to find a matching key to verify the token.", headers=AUTH_CHALLENGE_HEADER)
 
         payload = jwt.decode(
             token,
@@ -104,10 +116,9 @@ async def verify_token(request: Request) -> User:
 
     except JWTError as e:
         logger.error("[Auth][ERROR] Token validation failed: %s", e)
-        raise HTTPException(status_code=401, detail=f"Invalid token: {e}")
+        # **MODIFIED**: Added the special header for Power BI
+        raise HTTPException(status_code=401, detail=f"Invalid token: {e}", headers=AUTH_CHALLENGE_HEADER)
     except Exception as e:
         logger.error("[Auth][ERROR] An unexpected error occurred during token verification: %s", e)
         raise HTTPException(status_code=500, detail="An error occurred during token verification.")
-    
 
-    #this
