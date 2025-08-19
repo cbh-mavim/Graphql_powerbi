@@ -1,63 +1,52 @@
+# main.py
+
 import uvicorn
-from fastapi import FastAPI, Request, Depends, HTTPException
+import strawberry
+from fastapi import FastAPI, Depends
 from strawberry.fastapi import GraphQLRouter
 from fastapi.middleware.cors import CORSMiddleware
-from gql.schemas import schema # Assuming this is your Strawberry schema file
-from typing import Optional, Any
-from auth import verify_token, User # Assuming auth.py is in the same directory
 
-# --- CONTEXT GETTER ---
-# This function will now be used to get the context for GraphQL.
-# It relies on the verify_token dependency being resolved by FastAPI first.
-async def get_context(request: Request, user: User = Depends(verify_token)):
-    # The 'user' object is now available here because Depends(verify_token) was successful.
-    # If verify_token had failed, it would have raised a 401 HTTPException and this code would not run.
-    return {
-        "request": request,
-        "user": user
-    }
+# Import all necessary components from your other files
+from auth import verify_token, User, require_role
+from gql.resolvers.query_first import Query
+
+
+schema = strawberry.Schema(query=Query) 
+
+# This context_getter runs for every GraphQL request
+async def get_context(user: User = Depends(verify_token)):
+    """
+    Verifies the token using the dependency and places the User object
+    into the GraphQL context for use in resolvers.
+    """
+    return {"user": user}
 
 # --- FASTAPI APP SETUP ---
-app = FastAPI(title="Azure GraphQL Platform Processor")
+app = FastAPI(title="Scalable GraphQL API with Azure AD")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"], # In production, restrict this to your frontend's URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# --- GRAPHQL ROUTER SETUP (MODIFIED) ---
-# We now use Strawberry's GraphQLRouter and pass our context getter to it.
-# The 'dependencies' parameter ensures verify_token is run for every GraphQL request.
-graphql_app = GraphQLRouter(
-    schema,
-    graphiql=False,
-    context_getter=get_context,
-    # **CRITICAL CHANGE**: This enforces authentication on the entire GraphQL endpoint.
-    dependencies=[Depends(verify_token)] 
-)
+# --- GRAPHQL ROUTER ---
+# The context_getter ensures every request to /graphql is authenticated
+graphql_app = GraphQLRouter(schema, context_getter=get_context)
 app.include_router(graphql_app, prefix="/graphql")
 
-
-# --- OTHER ENDPOINTS ---
+# --- REST ENDPOINTS ---
 @app.get("/")
-async def root():
-    return {"message": "Welcome to Azure GraphQL Platform Processor", "graphql_endpoint": "/graphql"}
+def root():
+    return {"message": "API is running. GraphQL endpoint is at /graphql"}
 
-# This protected REST endpoint remains for testing if needed.
-@app.get("/api/protected")
-async def protected_route(user: User = Depends(verify_token)):
-    return {
-        "message": "You have access to the protected REST API!",
-        "user": {"id": user.id, "name": user.name, "roles": user.roles, "scopes": user.scp}
-    }
+@app.get("/api/admin", dependencies=[Depends(require_role(["Admin"]))])
+def admin_rest_endpoint():
+    """An example of a protected REST endpoint using the dependency factory."""
+    return {"message": "Welcome, Admin. You have accessed a protected REST API endpoint."}
 
-# --- MAIN EXECUTION ---
-def main():
-    print("Starting GraphQL server...")
-    uvicorn.run('main:app', host='0.0.0.0', port=8000, reload=True)
-
+# --- SERVER START ---
 if __name__ == "__main__":
-    main()
+    uvicorn.run('main:app', host='0.0.0.0', port=8000, reload=True)
