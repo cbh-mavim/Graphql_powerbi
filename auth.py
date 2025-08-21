@@ -12,8 +12,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("Auth")
 
 # --- CONFIGURATION ---
-TENANT_ID = "74c129d6-75e9-47bc-89e7-fc64baa89a47"
-CLIENT_ID = "3bd13b6a-2f23-4ace-9d71-d6d6a8e77a4e"
+TENANT_ID = "74c129d6-75e9-47bc-89e7-fc64baa89a47"  # CBH-mavim tenant id so you have to change it to mavim's official tenant id
+CLIENT_ID = "3bd13b6a-2f23-4ace-9d71-d6d6a8e77a4e" # Same here this registration is of my tenant's registration
 ISSUER = f"https://login.microsoftonline.com/{TENANT_ID}/v2.0"
 OPENID_CONFIG_URL = f"https://login.microsoftonline.com/{TENANT_ID}/v2.0/.well-known/openid-configuration"
 ALGORITHMS = ["RS256"]

@@ -1,42 +1,20 @@
-
 import strawberry
-from strawberry.types import Info
+from strawberry.types import Info 
 from typing import List
-from gql.auth_helpers import user_has_role # Import our new helper
+from gql.services.data_service import DataService
+from gql.types import CombinedDatabasesType
+from gql.config import combined_databases as PATH
+from gql.resolvers.transformers import transform_to_combined_databases
+from auth import User 
+ 
 
-# This defines how a User object will look in the GraphQL schema
+company_service = DataService(path=PATH,
+                              entity_type=CombinedDatabasesType,
+                              transform_func=transform_to_combined_databases)
+ 
 @strawberry.type
-class UserGQL:
-    id: str
-    name: str
-    roles: List[str]
-
-@strawberry.type
-class Query:
+class Query: 
     @strawberry.field
-    def me(self, info: Info) -> UserGQL:
-        """Returns the currently authenticated user's information."""
-        user = info.context["user"]
-        return UserGQL(id=user.id, name=user.name, roles=user.roles)
-
-    @strawberry.field
-    def public_data(self, info: Info) -> str:
-        """An example of a field available to any authenticated user."""
-        return "This is public data, available to all logged-in users."
-
-    @strawberry.field
-    def admin_only_data(self, info: Info) -> str:
-        """An example of a field that requires the 'Admin' role."""
-        # This one line protects the entire resolver.
-        user_has_role(info, required_roles=["Admin"])
-        
-        # The rest of the function only runs if the check passes.
-        return "This is top secret admin data!"
-
-    @strawberry.field
-    def editor_data(self, info: Info) -> str:
-        """An example of a field requiring one of several roles."""
-        user_has_role(info, required_roles=["Admin", "Editor"])
-
-        user = info.context["user"]
-        return f"This data can be accessed by editors and admins. You are: {user.name}"
+    def get_combined_databases(self, info: Info) -> List[CombinedDatabasesType]:
+    
+        return company_service.get_data(info=info)
